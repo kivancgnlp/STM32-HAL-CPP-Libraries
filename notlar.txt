@@ -1,0 +1,27 @@
+#include <array>
+#include <cstdio>
+#include <utility>
+#include <cstddef>
+
+// ---- The literal merge: same (pattern)... but the pack is an index pack ----
+template <std::size_t... I>
+constexpr auto make_doubled_impl(std::index_sequence<I...>) {
+    return std::array{ (I * 2)... };          // 0*2, 1*2, 2*2, ...
+}
+template <std::size_t N>
+constexpr auto make_doubled() {
+    return make_doubled_impl(std::make_index_sequence<N>{});
+}
+
+// ---- The real payoff: I is a constant expression, so use it as an NTTP ----
+template <std::size_t I>
+constexpr int compute() { return static_cast<int>(I * I); }
+
+template <std::size_t... I>
+constexpr auto make_table_impl(std::index_sequence<I...>) {
+    return std::array{ compute<I>()... };     // compute<0>(), compute<1>(), ...
+}
+template <std::size_t N>
+constexpr auto make_table() {
+    return make_table_impl(std::make_index_sequence<N>{});
+}
