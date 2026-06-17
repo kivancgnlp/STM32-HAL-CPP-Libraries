@@ -1,10 +1,15 @@
 #include <iostream>
 
 #include "hal/gpio/Gpio.h"
+#include "hal/gpio/AlternateFunctions_Info.h"
 
 static constexpr bool SIMULATION = true;
 
 int main() {
+
+
+    constexpr auto ne = bank_a_pin_alternate_functions.at(0).at(1);
+    std::cout << ne.second << std::endl;
 
     using namespace  kiv::hal::gpio;
 

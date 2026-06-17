@@ -9,4 +9,5 @@ add_executable(Project
         src/main.cpp
         src/hal/gpio/EmulationChecks.cpp
         src/hal/gpio/EmulationChecks.h
-        src/hal/gpio/GpioDefinitions.h)
+        src/hal/gpio/GpioDefinitions.h
+        src/hal/gpio/AlternateFunctions_Info.h)
