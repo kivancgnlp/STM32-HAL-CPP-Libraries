@@ -5,6 +5,7 @@
 #ifndef HAL_DRIVER_PRJ_GPIODEFINITIONS_H
 #define HAL_DRIVER_PRJ_GPIODEFINITIONS_H
 #include <string_view>
+#include <cassert>
 
 namespace kiv::hal::gpio {
     static constexpr uint32_t PERIPH_BASE{0x40000000UL};
@@ -44,6 +45,25 @@ namespace kiv::hal::gpio {
         PIN_15,
     };
 
+    enum class AlternateFunction : uint8_t {
+        AF_0 = 0,
+        AF_1,
+        AF_2,
+        AF_3,
+        AF_4,
+        AF_5,
+        AF_6,
+        AF_7,
+        AF_8,
+        AF_9,
+        AF_10,
+        AF_11,
+        AF_12,
+        AF_13,
+        AF_14,
+        AF_15,
+    };
+
     enum class GPIO_HW_Registers : uint8_t {
         MODE_CONFIG = 0, /*!< GPIO port mode register,               Address offset: 0x00      */
         OUTPUT_TYPE_CONFIG, /*!< GPIO port output type register,        Address offset: 0x04      */
@@ -62,6 +82,15 @@ namespace kiv::hal::gpio {
         GP_OUTPUT,
         ALTERNATE_FUNCTION,
         ANALOG,
+    };
+
+    enum class GPIO_MODE_CONFIG_INDICATOR : uint8_t {// This data type is only for software checks
+        UNCONFIGURATED = 0,
+        INPUT,
+        GP_OUTPUT,
+        ALTERNATE_FUNCTION,
+        ANALOG,
+
     };
 
     enum class GPIO_OUTPUT_TYPE : uint8_t {
@@ -101,6 +130,19 @@ namespace kiv::hal::gpio {
             case GPIO_MODE::GP_OUTPUT: return "GP_OUTPUT";
             case GPIO_MODE::ALTERNATE_FUNCTION: return "ALTERNATE_FUNCTION";
             case GPIO_MODE::ANALOG: return "ANALOG";
+        }
+
+        assert(false);
+
+    }
+
+    constexpr std::string_view get_mode_config_configuration_txt(GPIO_MODE_CONFIG_INDICATOR gpio_mode) {
+        switch (gpio_mode) {
+            case GPIO_MODE_CONFIG_INDICATOR::UNCONFIGURATED: return "UNCONFIGURATED";
+                case GPIO_MODE_CONFIG_INDICATOR::INPUT: return "INPUT";
+                case GPIO_MODE_CONFIG_INDICATOR::GP_OUTPUT: return "GP_OUTPUT";
+                case GPIO_MODE_CONFIG_INDICATOR::ALTERNATE_FUNCTION: return "ALTERNATE_FUNCTION";
+                case GPIO_MODE_CONFIG_INDICATOR::ANALOG: return "ANALOG";
         }
 
         assert(false);

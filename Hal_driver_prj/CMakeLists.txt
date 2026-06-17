@@ -10,4 +10,6 @@ add_executable(Project
         src/hal/gpio/EmulationChecks.cpp
         src/hal/gpio/EmulationChecks.h
         src/hal/gpio/GpioDefinitions.h
-        src/hal/gpio/AlternateFunctions_Info.h)
+        src/hal/gpio/AlternateFunctions_Info.h
+        src/hal/rcc/ClockConfiguration.cpp
+        src/hal/rcc/ClockConfiguration.h)

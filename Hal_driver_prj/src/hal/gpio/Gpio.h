@@ -9,6 +9,7 @@
 #include <cstdio>
 #include <optional>
 
+#include "AlternateFunctions_Info.h"
 #include "EmulationChecks.h"
 #include "GpioDefinitions.h"
 
@@ -22,6 +23,7 @@ namespace kiv::hal::gpio {
         std::array<GPIO_OUTPUT_TYPE, NUMBER_OF_PINS_IN_THE_BANK> cached_output_type_configs{};
         std::array<GPIO_OUTPUT_SPEED, NUMBER_OF_PINS_IN_THE_BANK> cached_output_speed_configs{};
         std::array<GPIO_PULL_UP_DOWN_CONFIG, NUMBER_OF_PINS_IN_THE_BANK> cached_pullup_pulldown_configs{};
+        std::array<GPIO_MODE_CONFIG_INDICATOR, NUMBER_OF_PINS_IN_THE_BANK> configurated_pins_info{};
 
 
         std::optional<uint32_t> input_data_register_cache;
@@ -60,11 +62,46 @@ namespace kiv::hal::gpio {
         }
 
     public:
+        void check_previous_config_of_the_pin(GPIO_PIN gpio_pin, GPIO_MODE gpio_mode) {
+
+            auto ne = configurated_pins_info.at(static_cast<uint8_t>(gpio_pin));
+
+            if (ne == GPIO_MODE_CONFIG_INDICATOR::UNCONFIGURATED) {
+                uint8_t ordinal = static_cast<uint8_t>(gpio_mode);
+                configurated_pins_info.at(static_cast<uint8_t>(gpio_pin)) = static_cast<GPIO_MODE_CONFIG_INDICATOR>(ordinal + 1);
+            }else {
+                if constexpr (EMULATION) {
+                    std::fprintf(stderr,"Pin previously configured as %d\n",get_mode_config_configuration_txt(ne).data());
+                }
+
+            }
+
+
+
+        }
+
+        template<GPIO_PIN GPIO_PIN, AlternateFunction AF, GPIO_OUTPUT_TYPE OUTPUT_TYPE = GPIO_OUTPUT_TYPE::PUSH_PULL, GPIO_OUTPUT_SPEED OUTPUT_SPEED = GPIO_OUTPUT_SPEED::LOW, GPIO_PULL_UP_DOWN_CONFIG PULL_UP_DOWN_CONFIG = GPIO_PULL_UP_DOWN_CONFIG::NO_PULLUP_OR_PULLDOWN>
+        void agg_configure_pin_as_AF_Output() {
+
+
+                constexpr auto ne = check_AF_availability(GPIO_PIN,AF);
+
+                check_previous_config_of_the_pin(GPIO_PIN, GPIO_MODE::ALTERNATE_FUNCTION);
+                cached_mode_configs.at(static_cast<unsigned>(GPIO_PIN)) = GPIO_MODE::ALTERNATE_FUNCTION;
+                cached_output_type_configs.at(static_cast<unsigned>(GPIO_PIN)) = OUTPUT_TYPE;
+                cached_output_speed_configs.at(static_cast<unsigned>(GPIO_PIN)) = OUTPUT_SPEED;
+                cached_pullup_pulldown_configs.at(static_cast<unsigned>(GPIO_PIN)) = PULL_UP_DOWN_CONFIG;
+
+
+        }
+
 
         template<GPIO_OUTPUT_TYPE OUTPUT_TYPE = GPIO_OUTPUT_TYPE::PUSH_PULL, GPIO_OUTPUT_SPEED OUTPUT_SPEED = GPIO_OUTPUT_SPEED::LOW, GPIO_PULL_UP_DOWN_CONFIG PULL_UP_DOWN_CONFIG = GPIO_PULL_UP_DOWN_CONFIG::NO_PULLUP_OR_PULLDOWN>
         void agg_configure_pin_as_GP_output(std::initializer_list<GPIO_PIN> pin_list) {
 
             for (const GPIO_PIN & pin: pin_list) {
+
+                check_previous_config_of_the_pin(pin, GPIO_MODE::GP_OUTPUT);
                 cached_mode_configs.at(static_cast<unsigned>(pin)) = GPIO_MODE::GP_OUTPUT;
                 cached_output_type_configs.at(static_cast<unsigned>(pin)) = OUTPUT_TYPE;
                 cached_output_speed_configs.at(static_cast<unsigned>(pin)) = OUTPUT_SPEED;
@@ -78,6 +115,8 @@ namespace kiv::hal::gpio {
         void agg_configure_pin_as_GP_input(std::initializer_list<GPIO_PIN> pin_list) {
 
             for (const GPIO_PIN & pin: pin_list) {
+
+                check_previous_config_of_the_pin(pin, GPIO_MODE::INPUT);
                 cached_mode_configs.at(static_cast<unsigned>(pin)) = GPIO_MODE::INPUT;
                 cached_output_type_configs.at(static_cast<unsigned>(pin)) = GPIO_OUTPUT_TYPE::PUSH_PULL; // Not used but better to set instead of unknown
                 cached_output_speed_configs.at(static_cast<unsigned>(pin)) = GPIO_OUTPUT_SPEED::LOW;  // Not used but better to set instead of unknown
