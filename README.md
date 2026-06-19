@@ -1,4 +1,4 @@
-# STM32-HAL-CPP-Libraries
+# STM32 HAL CPP Libraries
 
 > **Experimental — Under Active Construction**
 > This project is in a very early stage. APIs are unstable, incomplete, and subject to breaking changes without notice. Not suitable for production use.
