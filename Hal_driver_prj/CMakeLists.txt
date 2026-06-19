@@ -17,4 +17,7 @@ add_executable(Project
         src/hal/systick/SysTickController.cpp
         src/hal/systick/SysTickController.h
         src/hal/systick/SysTickEmulationHelper.h
-        src/hal/systick/SysTickDefinitions.h)
+        src/hal/systick/SysTickDefinitions.h
+        src/hal/uart/UartController.cpp
+        src/hal/uart/UartController.h
+        src/hal/uart/UartDefinitions.h)

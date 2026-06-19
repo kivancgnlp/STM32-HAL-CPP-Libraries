@@ -80,19 +80,45 @@ namespace kiv::hal::gpio {
 
         }
 
+        // Configure by AF number — use when you know the exact AF.
         template<GPIO_PIN GPIO_PIN, AlternateFunction AF, GPIO_OUTPUT_TYPE OUTPUT_TYPE = GPIO_OUTPUT_TYPE::PUSH_PULL, GPIO_OUTPUT_SPEED OUTPUT_SPEED = GPIO_OUTPUT_SPEED::LOW, GPIO_PULL_UP_DOWN_CONFIG PULL_UP_DOWN_CONFIG = GPIO_PULL_UP_DOWN_CONFIG::NO_PULLUP_OR_PULLDOWN>
         void agg_configure_pin_as_AF_Output() {
 
-
-                constexpr auto ne = check_AF_availability(GPIO_PIN,AF);
+                static_assert(is_af_available(BANK, GPIO_PIN, AF),
+                              "Selected AF is not available on this pin. "
+                              "Check AlternateFunctions_Info.h against the STM32F429 datasheet.");
 
                 check_previous_config_of_the_pin(GPIO_PIN, GPIO_MODE::ALTERNATE_FUNCTION);
                 cached_mode_configs.at(static_cast<unsigned>(GPIO_PIN)) = GPIO_MODE::ALTERNATE_FUNCTION;
                 cached_output_type_configs.at(static_cast<unsigned>(GPIO_PIN)) = OUTPUT_TYPE;
                 cached_output_speed_configs.at(static_cast<unsigned>(GPIO_PIN)) = OUTPUT_SPEED;
                 cached_pullup_pulldown_configs.at(static_cast<unsigned>(GPIO_PIN)) = PULL_UP_DOWN_CONFIG;
+        }
 
+        // Configure by peripheral function name — AF number, output type, and speed are
+        // derived automatically from get_peripheral_defaults(). Override only when needed.
+        template<GPIO_PIN GPIO_PIN,
+                 PeripheralFunction PF,
+                 GPIO_OUTPUT_TYPE  OUTPUT_TYPE   = get_peripheral_defaults(PF).output_type,
+                 GPIO_OUTPUT_SPEED OUTPUT_SPEED  = get_peripheral_defaults(PF).output_speed,
+                 GPIO_PULL_UP_DOWN_CONFIG PULL_UP_DOWN_CONFIG = GPIO_PULL_UP_DOWN_CONFIG::NO_PULLUP_OR_PULLDOWN>
+        void agg_configure_pin_as_AF_Output() {
 
+                static_assert(is_peripheral_available(BANK, GPIO_PIN, PF),
+                              "Selected peripheral function is not available on this pin. "
+                              "Check AlternateFunctions_Info.h against the STM32F429 datasheet.");
+
+                static_assert(!is_open_drain_required(PF) || OUTPUT_TYPE == GPIO_OUTPUT_TYPE::OPEN_DRAIN,
+                              "This peripheral requires OPEN_DRAIN output type (e.g. I2C). "
+                              "Do not override OUTPUT_TYPE to PUSH_PULL.");
+
+                constexpr AlternateFunction af = find_af_for_peripheral(BANK, GPIO_PIN, PF);
+
+                check_previous_config_of_the_pin(GPIO_PIN, GPIO_MODE::ALTERNATE_FUNCTION);
+                cached_mode_configs.at(static_cast<unsigned>(GPIO_PIN)) = GPIO_MODE::ALTERNATE_FUNCTION;
+                cached_output_type_configs.at(static_cast<unsigned>(GPIO_PIN)) = OUTPUT_TYPE;
+                cached_output_speed_configs.at(static_cast<unsigned>(GPIO_PIN)) = OUTPUT_SPEED;
+                cached_pullup_pulldown_configs.at(static_cast<unsigned>(GPIO_PIN)) = PULL_UP_DOWN_CONFIG;
         }
 
 
