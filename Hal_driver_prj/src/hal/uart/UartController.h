@@ -135,7 +135,7 @@ public:
             std::fflush(stdout);
         } else {
             // Wait until the transmit data register is empty (TXE=1)
-            while (get_bit_field<SR_TXE_Pos, 1>(read_sr_direct()) == 0u) {}
+            while (!get_bit_field<SR_TXE_Pos, 1>(read_sr_direct())) {}
             write_dr_direct(byte);
         }
     }
@@ -150,7 +150,7 @@ public:
     // Call before disabling the USART or entering low-power mode.
     void wait_for_tx_complete() {
         if constexpr (!EMULATION) {
-            while (get_bit_field<SR_TC_Pos, 1>(read_sr_direct()) == 0u) {}
+            while (!get_bit_field<SR_TC_Pos, 1>(read_sr_direct())) {}
         }
     }
 
@@ -163,7 +163,7 @@ public:
         if constexpr (EMULATION) {
             return false;  // stdin polling is platform-specific; not implemented
         } else {
-            return get_bit_field<SR_RXNE_Pos, 1>(read_sr_direct()) != 0u;
+            return get_bit_field<SR_RXNE_Pos, 1>(read_sr_direct());
         }
     }
 
@@ -172,7 +172,7 @@ public:
         if constexpr (EMULATION) {
             return static_cast<uint8_t>(std::getchar());
         } else {
-            while (get_bit_field<SR_RXNE_Pos, 1>(read_sr_direct()) == 0u) {}
+            while (!get_bit_field<SR_RXNE_Pos, 1>(read_sr_direct())) {}
             return read_dr_direct();
         }
     }
@@ -188,9 +188,9 @@ public:
         const uint32_t cr1 = emulation_reg_data.at(static_cast<uint8_t>(USART_Register::CR1));
         const uint32_t cr2 = emulation_reg_data.at(static_cast<uint8_t>(USART_Register::CR2));
 
-        const bool ue = get_bit_field<CR1_UE_Pos, 1>(cr1) != 0u;
-        const bool te = get_bit_field<CR1_TE_Pos, 1>(cr1) != 0u;
-        const bool re = get_bit_field<CR1_RE_Pos, 1>(cr1) != 0u;
+        const bool ue = get_bit_field<CR1_UE_Pos, 1>(cr1);
+        const bool te = get_bit_field<CR1_TE_Pos, 1>(cr1);
+        const bool re = get_bit_field<CR1_RE_Pos, 1>(cr1);
         const bool m  = get_bit_field<CR1_M_Pos,  1>(cr1) != 0u;
         const uint32_t stop = get_bit_field<CR2_STOP_Pos, 2>(cr2);
 

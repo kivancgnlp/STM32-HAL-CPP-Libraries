@@ -70,14 +70,14 @@ class RCC_Controller {
     bool is_cr_bit_set() {
         if constexpr (EMULATION) { return true; }
         return get_bit_field<BIT_POS, 1>(
-                   read_hw_register<RCC_Register::CR>()) != 0u;
+                   read_hw_register<RCC_Register::CR>());
     }
 
     template<uint8_t BIT_POS>
     bool is_cr_bit_clear() {
         if constexpr (EMULATION) { return true; }
-        return get_bit_field<BIT_POS, 1>(
-                   read_hw_register<RCC_Register::CR>()) == 0u;
+        return !get_bit_field<BIT_POS, 1>(
+                   read_hw_register<RCC_Register::CR>());
     }
 
     bool is_sysclk_switched_to(SystemClockSource src) {
@@ -332,9 +332,9 @@ public:
         const uint32_t apb1enr = emulation_reg_data.at(static_cast<uint8_t>(RCC_Register::APB1ENR));
         const uint32_t apb2enr = emulation_reg_data.at(static_cast<uint8_t>(RCC_Register::APB2ENR));
 
-        const bool hsi_on = get_bit_field<CR_HSION_Pos,  1>(cr) != 0u;
-        const bool hse_on = get_bit_field<CR_HSEON_Pos,  1>(cr) != 0u;
-        const bool pll_on = get_bit_field<CR_PLLON_Pos,  1>(cr) != 0u;
+        const bool hsi_on = get_bit_field<CR_HSION_Pos,  1>(cr);
+        const bool hse_on = get_bit_field<CR_HSEON_Pos,  1>(cr);
+        const bool pll_on = get_bit_field<CR_PLLON_Pos,  1>(cr);
 
         const uint32_t pllm   = get_bit_field<PLLCFGR_PLLM_Pos,   6>(pllcfgr);
         const uint32_t plln   = get_bit_field<PLLCFGR_PLLN_Pos,   9>(pllcfgr);

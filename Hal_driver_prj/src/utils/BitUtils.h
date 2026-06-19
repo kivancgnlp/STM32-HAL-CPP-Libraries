@@ -43,9 +43,11 @@ namespace kiv::utils {
     }
 
     template<uint8_t start_bit, uint8_t bit_count, typename DataType = uint32_t>
-    [[nodiscard]] constexpr DataType get_bit_field(DataType value) {
+    [[nodiscard]] constexpr std::conditional_t<bit_count == 1, bool, DataType>
+    get_bit_field(DataType value) {
         constexpr DataType mask = get_bit_mask<start_bit, bit_count, DataType>();
-        return (value & mask) >> start_bit;
+        return static_cast<std::conditional_t<bit_count == 1, bool, DataType>>(
+            (value & mask) >> start_bit);
     }
 }; // namespace kiv::utils
 
