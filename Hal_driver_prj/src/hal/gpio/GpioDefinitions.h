@@ -148,6 +148,56 @@ namespace kiv::hal::gpio {
         assert(false);
 
     }
+
+    constexpr std::string_view get_output_type_txt(GPIO_OUTPUT_TYPE t) {
+        switch (t) {
+            case GPIO_OUTPUT_TYPE::PUSH_PULL:  return "PUSH_PULL";
+            case GPIO_OUTPUT_TYPE::OPEN_DRAIN: return "OPEN_DRAIN";
+        }
+        assert(false);
+    }
+
+    constexpr std::string_view get_output_speed_txt(GPIO_OUTPUT_SPEED s) {
+        switch (s) {
+            case GPIO_OUTPUT_SPEED::LOW:       return "LOW";
+            case GPIO_OUTPUT_SPEED::MEDIUM:    return "MEDIUM";
+            case GPIO_OUTPUT_SPEED::HIGH:      return "HIGH";
+            case GPIO_OUTPUT_SPEED::VERY_HIGH: return "VERY_HIGH";
+        }
+        assert(false);
+    }
+
+    constexpr std::string_view get_pullup_pulldown_txt(GPIO_PULL_UP_DOWN_CONFIG p) {
+        switch (p) {
+            case GPIO_PULL_UP_DOWN_CONFIG::NO_PULLUP_OR_PULLDOWN: return "NONE";
+            case GPIO_PULL_UP_DOWN_CONFIG::PULL_UP:               return "PULL_UP";
+            case GPIO_PULL_UP_DOWN_CONFIG::PULL_DOWN:             return "PULL_DOWN";
+            case GPIO_PULL_UP_DOWN_CONFIG::RESERVED:              return "RESERVED";
+        }
+        assert(false);
+    }
+
+    constexpr std::string_view get_af_txt(AlternateFunction af) {
+        switch (af) {
+            case AlternateFunction::AF_0:  return "AF_0";
+            case AlternateFunction::AF_1:  return "AF_1";
+            case AlternateFunction::AF_2:  return "AF_2";
+            case AlternateFunction::AF_3:  return "AF_3";
+            case AlternateFunction::AF_4:  return "AF_4";
+            case AlternateFunction::AF_5:  return "AF_5";
+            case AlternateFunction::AF_6:  return "AF_6";
+            case AlternateFunction::AF_7:  return "AF_7";
+            case AlternateFunction::AF_8:  return "AF_8";
+            case AlternateFunction::AF_9:  return "AF_9";
+            case AlternateFunction::AF_10: return "AF_10";
+            case AlternateFunction::AF_11: return "AF_11";
+            case AlternateFunction::AF_12: return "AF_12";
+            case AlternateFunction::AF_13: return "AF_13";
+            case AlternateFunction::AF_14: return "AF_14";
+            case AlternateFunction::AF_15: return "AF_15";
+        }
+        assert(false);
+    }
 }
 
 #endif //HAL_DRIVER_PRJ_GPIODEFINITIONS_H

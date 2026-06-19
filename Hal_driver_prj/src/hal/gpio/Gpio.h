@@ -23,6 +23,7 @@ namespace kiv::hal::gpio {
         std::array<GPIO_OUTPUT_TYPE, NUMBER_OF_PINS_IN_THE_BANK> cached_output_type_configs{};
         std::array<GPIO_OUTPUT_SPEED, NUMBER_OF_PINS_IN_THE_BANK> cached_output_speed_configs{};
         std::array<GPIO_PULL_UP_DOWN_CONFIG, NUMBER_OF_PINS_IN_THE_BANK> cached_pullup_pulldown_configs{};
+        std::array<AlternateFunction, NUMBER_OF_PINS_IN_THE_BANK> cached_af_configs{};
         std::array<GPIO_MODE_CONFIG_INDICATOR, NUMBER_OF_PINS_IN_THE_BANK> configurated_pins_info{};
 
 
@@ -93,6 +94,7 @@ namespace kiv::hal::gpio {
                 cached_output_type_configs.at(static_cast<unsigned>(GPIO_PIN)) = OUTPUT_TYPE;
                 cached_output_speed_configs.at(static_cast<unsigned>(GPIO_PIN)) = OUTPUT_SPEED;
                 cached_pullup_pulldown_configs.at(static_cast<unsigned>(GPIO_PIN)) = PULL_UP_DOWN_CONFIG;
+                cached_af_configs.at(static_cast<unsigned>(GPIO_PIN)) = AF;
         }
 
         // Configure by peripheral function name — AF number, output type, and speed are
@@ -119,6 +121,7 @@ namespace kiv::hal::gpio {
                 cached_output_type_configs.at(static_cast<unsigned>(GPIO_PIN)) = OUTPUT_TYPE;
                 cached_output_speed_configs.at(static_cast<unsigned>(GPIO_PIN)) = OUTPUT_SPEED;
                 cached_pullup_pulldown_configs.at(static_cast<unsigned>(GPIO_PIN)) = PULL_UP_DOWN_CONFIG;
+                cached_af_configs.at(static_cast<unsigned>(GPIO_PIN)) = af;
         }
 
 
@@ -192,6 +195,24 @@ namespace kiv::hal::gpio {
                 }
 
                 write_hw_register<GPIO_HW_Registers::PULLUP_PULLDOWN_CONFIG>(pullup_pulldown_configs);
+            }
+
+            {
+                uint32_t afrl{}, afrh{};
+
+                for (unsigned int i = 0; i < 8; i++) {
+                    if (cached_mode_configs.at(i) == GPIO_MODE::ALTERNATE_FUNCTION) {
+                        afrl |= static_cast<unsigned>(cached_af_configs.at(i)) << (i * 4);
+                    }
+                }
+                for (unsigned int i = 8; i < NUMBER_OF_PINS_IN_THE_BANK; i++) {
+                    if (cached_mode_configs.at(i) == GPIO_MODE::ALTERNATE_FUNCTION) {
+                        afrh |= static_cast<unsigned>(cached_af_configs.at(i)) << ((i - 8) * 4);
+                    }
+                }
+
+                write_hw_register<GPIO_HW_Registers::ALTERNATE_FUNCTION_CONFIG_L>(afrl);
+                write_hw_register<GPIO_HW_Registers::ALTERNATE_FUNCTION_CONFIG_H>(afrh);
             }
 
             if constexpr (EMULATION) {
