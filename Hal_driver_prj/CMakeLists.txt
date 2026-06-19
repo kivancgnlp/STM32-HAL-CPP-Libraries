@@ -12,4 +12,9 @@ add_executable(Project
         src/hal/gpio/GpioDefinitions.h
         src/hal/gpio/AlternateFunctions_Info.h
         src/hal/rcc/ClockConfiguration.cpp
-        src/hal/rcc/ClockConfiguration.h)
+        src/hal/rcc/ClockConfiguration.h
+        src/hal/rcc/RccDefinitions.h
+        src/hal/systick/SysTickController.cpp
+        src/hal/systick/SysTickController.h
+        src/hal/systick/SysTickEmulationHelper.h
+        src/hal/systick/SysTickDefinitions.h)

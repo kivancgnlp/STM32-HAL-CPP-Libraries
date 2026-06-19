@@ -2,43 +2,36 @@
 
 #include "hal/gpio/Gpio.h"
 #include "hal/rcc/ClockConfiguration.h"
-
+#include "hal/systick/SysTickController.h"
 
 static constexpr bool SIMULATION = true;
 
-void configure_gpio() {
-    using namespace kiv::hal::gpio;
-
-    GPIO_Bank<GPIO_BANK::BANK_A, SIMULATION> gpio;
-
-    gpio.agg_configure_pin_as_GP_output({GPIO_PIN::PIN_1, GPIO_PIN::PIN_5});
-    gpio.agg_configure_pin_as_GP_input({GPIO_PIN::PIN_3, GPIO_PIN::PIN_4});
-    gpio.agg_configure_pin_as_AF_Output<GPIO_PIN::PIN_0, AlternateFunction::AF_1>();
-
-    gpio.agg_commit_cached_config_to_hw();
-
-    gpio.set_pin<GPIO_PIN::PIN_1>();
-
-    bool val = gpio.read_pin<GPIO_PIN::PIN_1>();
-
-    gpio.reset_pin<GPIO_PIN::PIN_1>();
-}
-
 int main() {
     using namespace kiv::hal::rcc;
+    using namespace kiv::hal::gpio;
+    using namespace kiv::hal::systick;
 
+    // 1. System clock: HSE=8 MHz, M=8, N=360, P=2 → SYSCLK=180 MHz
     RCC_Controller<SIMULATION> rcc;
-
-    // HSE=8 MHz, M=8, N=360, P=2 -> SYSCLK = (8/8)*360/2 = 180 MHz
     rcc.configure_hse_pll_sysclk<8, 8, 360, 2>();
-
-    // Enable peripheral clocks after the system clock is configured
     rcc.enable_ahb1_clock<AHB1_Peripheral::GPIOA>();
-    rcc.enable_apb1_clock<APB1_Peripheral::USART2>();
-
     rcc.print_emulation_state();
 
-    configure_gpio();
+    // 2. SysTick: 1 ms ticks driven by HCLK=180 MHz
+    //    Must come after the system clock is stable so the reload value is correct.
+    SysTick_Controller<SIMULATION> systick;
+    systick.start<180'000'000>();
 
-    return 0;
+    // 3. PA5 as push-pull output (LD2 on NUCLEO-F429ZI)
+    GPIO_Bank<GPIO_BANK::BANK_A, SIMULATION> gpio;
+    gpio.agg_configure_pin_as_GP_output({GPIO_PIN::PIN_5});
+    gpio.agg_commit_cached_config_to_hw();
+
+    // 4. Blink at 1 Hz (500 ms on, 500 ms off)
+    while (true) {
+        gpio.set_pin<GPIO_PIN::PIN_5>();
+        systick.delay_ms(500);
+        gpio.reset_pin<GPIO_PIN::PIN_5>();
+        systick.delay_ms(500);
+    }
 }

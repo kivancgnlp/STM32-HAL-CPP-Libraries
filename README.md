@@ -9,7 +9,7 @@ Register layouts, bit positions, and peripheral addresses are derived from the *
 
 ### Zero-Cost Simulation
 
-The library is designed so that peripherals can be compiled in simulation mode on a host machine (x86/x64) without any runtime overhead on the target. Simulation behavior is selected at compile time via a boolean template parameter — when targeting real hardware, the simulation code is completely compiled away with no performance or size penalty. In simulation mode, register reads/writes go to an internal array and hardware ready-flag polling is skipped, so the full configuration logic runs and can be inspected on the host.
+The library is designed so that peripherals can be compiled in simulation mode on a host machine (x86/x64) without any runtime overhead on the target. Simulation behavior is selected at compile time via a boolean template parameter — when targeting real hardware, the simulation code is completely compiled away with no performance or size penalty. In simulation mode, register reads/writes go to an internal array and hardware ready-flag polling is skipped, so the full configuration logic runs and can be inspected on the host. SysTick simulation is an exception: instead of emulating a register, a `std::thread` drives the millisecond tick counter at real wall-clock time, so `delay_ms()` behaves correctly on the host.
 
 ## Target Hardware
 
@@ -27,6 +27,7 @@ The library is designed so that peripherals can be compiled in simulation mode o
 |---|---|---|
 | GPIO | `hal/gpio/` | In Progress |
 | RCC / Clock | `hal/rcc/` | In Progress |
+| SysTick | `hal/systick/` | In Progress |
 
 ## Project Structure
 
@@ -39,9 +40,14 @@ Hal_driver_prj/
     │   │   ├── GpioDefinitions.h   # Enums, register offsets, consteval helpers
     │   │   ├── EmulationChecks.h   # Simulation-mode register decoder
     │   │   └── AlternateFunctions_Info.h
-    │   └── rcc/                # Reset and Clock Control abstraction
-    │       ├── ClockConfiguration.h  # RCC_Controller<EMULATION> class template
-    │       └── RccDefinitions.h      # Enums, register offsets, consteval helpers
+    │   ├── rcc/                # Reset and Clock Control abstraction
+    │   │   ├── ClockConfiguration.h  # RCC_Controller<EMULATION> class template
+    │   │   └── RccDefinitions.h      # Enums, register offsets, consteval helpers
+    │   └── systick/            # SysTick timer abstraction
+    │       ├── SysTickController.h   # SysTick_Controller<EMULATION> class template
+    │       ├── SysTickController.cpp # g_systick_ms_count definition + SysTick_Handler ISR
+    │       ├── SysTickDefinitions.h  # Register addresses, bit positions
+    │       └── SysTickEmulationHelper.h  # std::thread-based tick simulation
     ├── utils/
     │   └── BitUtils.h          # Type-safe bit field get/set/mask templates
     └── main.cpp                # Usage example
@@ -131,6 +137,62 @@ Compile-time frequency validation — this triggers a `static_assert` at build t
 ```cpp
 // Error: SYSCLK cannot exceed 180 MHz
 rcc.configure_hse_pll_sysclk<8, 4, 400, 2>(); // would be 200 MHz
+```
+
+### SysTick — Millisecond Tick Counter
+
+```cpp
+#include "hal/systick/SysTickController.h"
+
+static constexpr bool SIMULATION = true;
+
+using namespace kiv::hal::systick;
+
+SysTick_Controller<SIMULATION> systick;
+
+// Must be called after RCC configures the system clock.
+// HCLK_HZ must match the actual HCLK — used to compute the reload value at compile time.
+systick.start<180'000'000>(); // 1 ms ticks at 180 MHz HCLK
+
+systick.delay_ms(500);        // blocking delay
+
+uint32_t t = systick.get_tick_ms(); // raw tick counter value
+```
+
+In simulation, `start()` spawns a `std::thread` that increments the tick counter every millisecond using `std::this_thread::sleep_for`. On real hardware, `start()` programs `STK_LOAD`/`STK_VAL`/`STK_CTRL` and the `SysTick_Handler` ISR drives the counter.
+
+### LED Blink — Full Example
+
+```cpp
+#include "hal/gpio/Gpio.h"
+#include "hal/rcc/ClockConfiguration.h"
+#include "hal/systick/SysTickController.h"
+
+static constexpr bool SIMULATION = true;
+
+int main() {
+    using namespace kiv::hal::rcc;
+    using namespace kiv::hal::gpio;
+    using namespace kiv::hal::systick;
+
+    RCC_Controller<SIMULATION> rcc;
+    rcc.configure_hse_pll_sysclk<8, 8, 360, 2>(); // SYSCLK = 180 MHz
+    rcc.enable_ahb1_clock<AHB1_Peripheral::GPIOA>();
+
+    SysTick_Controller<SIMULATION> systick;
+    systick.start<180'000'000>();                  // 1 ms ticks
+
+    GPIO_Bank<GPIO_BANK::BANK_A, SIMULATION> gpio;
+    gpio.agg_configure_pin_as_GP_output({GPIO_PIN::PIN_5}); // PA5 = LD2
+    gpio.agg_commit_cached_config_to_hw();
+
+    while (true) {
+        gpio.set_pin<GPIO_PIN::PIN_5>();
+        systick.delay_ms(500);
+        gpio.reset_pin<GPIO_PIN::PIN_5>();
+        systick.delay_ms(500);
+    }
+}
 ```
 
 ## Contributing
