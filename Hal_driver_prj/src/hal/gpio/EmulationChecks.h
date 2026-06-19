@@ -39,7 +39,7 @@ public:
     void resolve_mode_configs(const uint32_t mode_config_reg_value, std::integer_sequence<unsigned,N...>) {
 
         using kiv::utils::get_bit_field;
-        resolved_mode_configs = {static_cast<GPIO_MODE>(get_bit_field<uint32_t,N*2,2>(mode_config_reg_value))...};
+        resolved_mode_configs = {static_cast<GPIO_MODE>(get_bit_field<N*2,2>(mode_config_reg_value))...};
 
     }
 
@@ -47,7 +47,7 @@ public:
     void resolve_output_type_configs(const uint32_t output_type_config_reg_val, std::integer_sequence<unsigned,N...>) {
 
         using kiv::utils::get_bit_field;
-        resolved_output_type_configs = {static_cast<GPIO_OUTPUT_TYPE>(get_bit_field<uint32_t,N,1>(output_type_config_reg_val))...};
+        resolved_output_type_configs = {static_cast<GPIO_OUTPUT_TYPE>(get_bit_field<N,1>(output_type_config_reg_val))...};
 
     }
 

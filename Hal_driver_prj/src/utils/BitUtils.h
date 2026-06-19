@@ -11,7 +11,7 @@
 
 namespace kiv::utils {
 
-    template<typename DataType = uint32_t, uint8_t start_bit, uint8_t bit_count>
+    template<uint8_t start_bit, uint8_t bit_count, typename DataType = uint32_t>
     [[nodiscard]] constexpr DataType get_bit_mask() {
         constexpr uint8_t total_bits = sizeof(DataType) * 8;
 
@@ -28,9 +28,9 @@ namespace kiv::utils {
         }
     }
 
-    template<typename DataType = uint32_t, uint8_t start_bit, uint8_t bit_count>
+    template<uint8_t start_bit, uint8_t bit_count, typename DataType = uint32_t>
     constexpr void update_bit_field(DataType &original_value, DataType bit_field_to_embed) {
-        constexpr DataType mask = get_bit_mask<DataType, start_bit, bit_count>();
+        constexpr DataType mask = get_bit_mask<start_bit, bit_count, DataType>();
         constexpr uint8_t total_bits = sizeof(DataType) * 8;
 
         // Prevent UB: check asset safely only if the shift amount is less than total_bits
@@ -42,9 +42,9 @@ namespace kiv::utils {
         original_value = (original_value & ~mask) | shifted;
     }
 
-    template<typename DataType = uint32_t, uint8_t start_bit, uint8_t bit_count>
+    template<uint8_t start_bit, uint8_t bit_count, typename DataType = uint32_t>
     [[nodiscard]] constexpr DataType get_bit_field(DataType value) {
-        constexpr DataType mask = get_bit_mask<DataType, start_bit, bit_count>();
+        constexpr DataType mask = get_bit_mask<start_bit, bit_count, DataType>();
         return (value & mask) >> start_bit;
     }
 }; // namespace kiv::utils

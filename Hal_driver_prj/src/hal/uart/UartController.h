@@ -15,6 +15,9 @@
 
 namespace kiv::hal::uart {
 
+using kiv::utils::get_bit_field;
+using kiv::utils::update_bit_field;
+
 // UART_Controller<ID, EMULATION>
 //   Polling-only (no interrupts). Supports 8N1 configuration.
 //
@@ -115,9 +118,9 @@ public:
         write_hw_register<USART_Register::CR3>(0u);  // no flow control, no DMA
 
         uint32_t cr1 = 0u;
-        kiv::utils::update_bit_field<uint32_t, CR1_RE_Pos, 1>(cr1, 1u);  // receiver on
-        kiv::utils::update_bit_field<uint32_t, CR1_TE_Pos, 1>(cr1, 1u);  // transmitter on
-        kiv::utils::update_bit_field<uint32_t, CR1_UE_Pos, 1>(cr1, 1u);  // USART on
+        update_bit_field<CR1_RE_Pos, 1>(cr1, 1u);  // receiver on
+        update_bit_field<CR1_TE_Pos, 1>(cr1, 1u);  // transmitter on
+        update_bit_field<CR1_UE_Pos, 1>(cr1, 1u);  // USART on
         // M=0 (default): 8 data bits
         write_hw_register<USART_Register::CR1>(cr1);
     }
@@ -132,7 +135,7 @@ public:
             std::fflush(stdout);
         } else {
             // Wait until the transmit data register is empty (TXE=1)
-            while (kiv::utils::get_bit_field<uint32_t, SR_TXE_Pos, 1>(read_sr_direct()) == 0u) {}
+            while (get_bit_field<SR_TXE_Pos, 1>(read_sr_direct()) == 0u) {}
             write_dr_direct(byte);
         }
     }
@@ -147,7 +150,7 @@ public:
     // Call before disabling the USART or entering low-power mode.
     void wait_for_tx_complete() {
         if constexpr (!EMULATION) {
-            while (kiv::utils::get_bit_field<uint32_t, SR_TC_Pos, 1>(read_sr_direct()) == 0u) {}
+            while (get_bit_field<SR_TC_Pos, 1>(read_sr_direct()) == 0u) {}
         }
     }
 
@@ -160,7 +163,7 @@ public:
         if constexpr (EMULATION) {
             return false;  // stdin polling is platform-specific; not implemented
         } else {
-            return kiv::utils::get_bit_field<uint32_t, SR_RXNE_Pos, 1>(read_sr_direct()) != 0u;
+            return get_bit_field<SR_RXNE_Pos, 1>(read_sr_direct()) != 0u;
         }
     }
 
@@ -169,7 +172,7 @@ public:
         if constexpr (EMULATION) {
             return static_cast<uint8_t>(std::getchar());
         } else {
-            while (kiv::utils::get_bit_field<uint32_t, SR_RXNE_Pos, 1>(read_sr_direct()) == 0u) {}
+            while (get_bit_field<SR_RXNE_Pos, 1>(read_sr_direct()) == 0u) {}
             return read_dr_direct();
         }
     }
@@ -181,17 +184,15 @@ public:
     void print_emulation_state() const {
         if constexpr (!EMULATION) { return; }
 
-        using kiv::utils::get_bit_field;
-
         const uint32_t brr = emulation_reg_data.at(static_cast<uint8_t>(USART_Register::BRR));
         const uint32_t cr1 = emulation_reg_data.at(static_cast<uint8_t>(USART_Register::CR1));
         const uint32_t cr2 = emulation_reg_data.at(static_cast<uint8_t>(USART_Register::CR2));
 
-        const bool ue = get_bit_field<uint32_t, CR1_UE_Pos, 1>(cr1) != 0u;
-        const bool te = get_bit_field<uint32_t, CR1_TE_Pos, 1>(cr1) != 0u;
-        const bool re = get_bit_field<uint32_t, CR1_RE_Pos, 1>(cr1) != 0u;
-        const bool m  = get_bit_field<uint32_t, CR1_M_Pos,  1>(cr1) != 0u;
-        const uint32_t stop = get_bit_field<uint32_t, CR2_STOP_Pos, 2>(cr2);
+        const bool ue = get_bit_field<CR1_UE_Pos, 1>(cr1) != 0u;
+        const bool te = get_bit_field<CR1_TE_Pos, 1>(cr1) != 0u;
+        const bool re = get_bit_field<CR1_RE_Pos, 1>(cr1) != 0u;
+        const bool m  = get_bit_field<CR1_M_Pos,  1>(cr1) != 0u;
+        const uint32_t stop = get_bit_field<CR2_STOP_Pos, 2>(cr2);
 
         std::printf("---- %s Emulation State ----\n", get_usart_id_txt(ID).data());
         std::printf("  BRR : 0x%04lx\n",  static_cast<unsigned long>(brr));

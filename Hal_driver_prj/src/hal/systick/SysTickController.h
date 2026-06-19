@@ -76,10 +76,11 @@ public:
             write_hw_register<SysTick_Register::LOAD>(reload);
             write_hw_register<SysTick_Register::VAL>(0u);  // clear current value before enabling
 
+            using kiv::utils::update_bit_field;
             uint32_t ctrl = 0u;
-            kiv::utils::update_bit_field<uint32_t, STK_CTRL_ENABLE_Pos,    1>(ctrl, 1u); // counter on
-            kiv::utils::update_bit_field<uint32_t, STK_CTRL_TICKINT_Pos,   1>(ctrl, 1u); // fire IRQ on wrap
-            kiv::utils::update_bit_field<uint32_t, STK_CTRL_CLKSOURCE_Pos, 1>(ctrl, 1u); // use HCLK
+            update_bit_field<STK_CTRL_ENABLE_Pos,    1>(ctrl, 1u); // counter on
+            update_bit_field<STK_CTRL_TICKINT_Pos,   1>(ctrl, 1u); // fire IRQ on wrap
+            update_bit_field<STK_CTRL_CLKSOURCE_Pos, 1>(ctrl, 1u); // use HCLK
             write_hw_register<SysTick_Register::CTRL>(ctrl);
         }
     }

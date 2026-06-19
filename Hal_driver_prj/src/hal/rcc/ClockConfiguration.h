@@ -14,6 +14,9 @@
 
 namespace kiv::hal::rcc {
 
+using kiv::utils::get_bit_field;
+using kiv::utils::update_bit_field;
+
 // RCC_Controller<EMULATION> mirrors the GPIO_Bank<BANK, EMULATION> design:
 //  - EMULATION=true : register writes/reads go to an internal array; hardware
 //    ready-flag polling is skipped so the code runs on host.
@@ -66,20 +69,20 @@ class RCC_Controller {
     template<uint8_t BIT_POS>
     bool is_cr_bit_set() {
         if constexpr (EMULATION) { return true; }
-        return kiv::utils::get_bit_field<uint32_t, BIT_POS, 1>(
+        return get_bit_field<BIT_POS, 1>(
                    read_hw_register<RCC_Register::CR>()) != 0u;
     }
 
     template<uint8_t BIT_POS>
     bool is_cr_bit_clear() {
         if constexpr (EMULATION) { return true; }
-        return kiv::utils::get_bit_field<uint32_t, BIT_POS, 1>(
+        return get_bit_field<BIT_POS, 1>(
                    read_hw_register<RCC_Register::CR>()) == 0u;
     }
 
     bool is_sysclk_switched_to(SystemClockSource src) {
         if constexpr (EMULATION) { return true; }
-        return kiv::utils::get_bit_field<uint32_t, CFGR_SWS_Pos, 2>(
+        return get_bit_field<CFGR_SWS_Pos, 2>(
                    read_hw_register<RCC_Register::CFGR>())
                == static_cast<uint32_t>(src);
     }
@@ -93,14 +96,14 @@ public:
 
     void enable_hsi() {
         uint32_t cr = read_hw_register<RCC_Register::CR>();
-        kiv::utils::update_bit_field<uint32_t, CR_HSION_Pos, 1>(cr, 1u);
+        update_bit_field<CR_HSION_Pos, 1>(cr, 1u);
         write_hw_register<RCC_Register::CR>(cr);
         while (!is_cr_bit_set<CR_HSIRDY_Pos>()) {}
     }
 
     void disable_hsi() {
         uint32_t cr = read_hw_register<RCC_Register::CR>();
-        kiv::utils::update_bit_field<uint32_t, CR_HSION_Pos, 1>(cr, 0u);
+        update_bit_field<CR_HSION_Pos, 1>(cr, 0u);
         write_hw_register<RCC_Register::CR>(cr);
         while (!is_cr_bit_clear<CR_HSIRDY_Pos>()) {}
     }
@@ -108,7 +111,7 @@ public:
     // Enables HSE oscillator (external crystal).
     void enable_hse() {
         uint32_t cr = read_hw_register<RCC_Register::CR>();
-        kiv::utils::update_bit_field<uint32_t, CR_HSEON_Pos, 1>(cr, 1u);
+        update_bit_field<CR_HSEON_Pos, 1>(cr, 1u);
         write_hw_register<RCC_Register::CR>(cr);
         while (!is_cr_bit_set<CR_HSERDY_Pos>()) {}
     }
@@ -116,16 +119,16 @@ public:
     // Enables HSE in bypass mode (external clock signal, no crystal).
     void enable_hse_bypass() {
         uint32_t cr = read_hw_register<RCC_Register::CR>();
-        kiv::utils::update_bit_field<uint32_t, CR_HSEBYP_Pos, 1>(cr, 1u);
-        kiv::utils::update_bit_field<uint32_t, CR_HSEON_Pos,  1>(cr, 1u);
+        update_bit_field<CR_HSEBYP_Pos, 1>(cr, 1u);
+        update_bit_field<CR_HSEON_Pos,  1>(cr, 1u);
         write_hw_register<RCC_Register::CR>(cr);
         while (!is_cr_bit_set<CR_HSERDY_Pos>()) {}
     }
 
     void disable_hse() {
         uint32_t cr = read_hw_register<RCC_Register::CR>();
-        kiv::utils::update_bit_field<uint32_t, CR_HSEON_Pos,  1>(cr, 0u);
-        kiv::utils::update_bit_field<uint32_t, CR_HSEBYP_Pos, 1>(cr, 0u);
+        update_bit_field<CR_HSEON_Pos,  1>(cr, 0u);
+        update_bit_field<CR_HSEBYP_Pos, 1>(cr, 0u);
         write_hw_register<RCC_Register::CR>(cr);
         while (!is_cr_bit_clear<CR_HSERDY_Pos>()) {}
     }
@@ -152,7 +155,7 @@ public:
         // Step 1: disable PLL before reconfiguring (RM0090 §6.3.2 note)
         {
             uint32_t cr = read_hw_register<RCC_Register::CR>();
-            kiv::utils::update_bit_field<uint32_t, CR_PLLON_Pos, 1>(cr, 0u);
+            update_bit_field<CR_PLLON_Pos, 1>(cr, 0u);
             write_hw_register<RCC_Register::CR>(cr);
         }
         while (!is_cr_bit_clear<CR_PLLRDY_Pos>()) {}
@@ -160,18 +163,18 @@ public:
         // Step 2: write all PLL parameters in one shot
         {
             uint32_t pllcfgr = 0u;
-            kiv::utils::update_bit_field<uint32_t, PLLCFGR_PLLM_Pos,   6>(pllcfgr, static_cast<uint32_t>(M));
-            kiv::utils::update_bit_field<uint32_t, PLLCFGR_PLLN_Pos,   9>(pllcfgr, static_cast<uint32_t>(N));
-            kiv::utils::update_bit_field<uint32_t, PLLCFGR_PLLP_Pos,   2>(pllcfgr, static_cast<uint32_t>(pllp_to_reg(P)));
-            kiv::utils::update_bit_field<uint32_t, PLLCFGR_PLLSRC_Pos, 1>(pllcfgr, static_cast<uint32_t>(SRC));
-            kiv::utils::update_bit_field<uint32_t, PLLCFGR_PLLQ_Pos,   4>(pllcfgr, static_cast<uint32_t>(Q));
+            update_bit_field<PLLCFGR_PLLM_Pos,   6>(pllcfgr, static_cast<uint32_t>(M));
+            update_bit_field<PLLCFGR_PLLN_Pos,   9>(pllcfgr, static_cast<uint32_t>(N));
+            update_bit_field<PLLCFGR_PLLP_Pos,   2>(pllcfgr, static_cast<uint32_t>(pllp_to_reg(P)));
+            update_bit_field<PLLCFGR_PLLSRC_Pos, 1>(pllcfgr, static_cast<uint32_t>(SRC));
+            update_bit_field<PLLCFGR_PLLQ_Pos,   4>(pllcfgr, static_cast<uint32_t>(Q));
             write_hw_register<RCC_Register::PLLCFGR>(pllcfgr);
         }
 
         // Step 3: re-enable PLL and wait for lock
         {
             uint32_t cr = read_hw_register<RCC_Register::CR>();
-            kiv::utils::update_bit_field<uint32_t, CR_PLLON_Pos, 1>(cr, 1u);
+            update_bit_field<CR_PLLON_Pos, 1>(cr, 1u);
             write_hw_register<RCC_Register::CR>(cr);
         }
         while (!is_cr_bit_set<CR_PLLRDY_Pos>()) {}
@@ -190,9 +193,9 @@ public:
              APB_Prescaler APB2_PRE = APB_Prescaler::DIV2>
     void configure_bus_prescalers() {
         uint32_t cfgr = read_hw_register<RCC_Register::CFGR>();
-        kiv::utils::update_bit_field<uint32_t, CFGR_HPRE_Pos,  4>(cfgr, static_cast<uint32_t>(AHB_PRE));
-        kiv::utils::update_bit_field<uint32_t, CFGR_PPRE1_Pos, 3>(cfgr, static_cast<uint32_t>(APB1_PRE));
-        kiv::utils::update_bit_field<uint32_t, CFGR_PPRE2_Pos, 3>(cfgr, static_cast<uint32_t>(APB2_PRE));
+        update_bit_field<CFGR_HPRE_Pos,  4>(cfgr, static_cast<uint32_t>(AHB_PRE));
+        update_bit_field<CFGR_PPRE1_Pos, 3>(cfgr, static_cast<uint32_t>(APB1_PRE));
+        update_bit_field<CFGR_PPRE2_Pos, 3>(cfgr, static_cast<uint32_t>(APB2_PRE));
         write_hw_register<RCC_Register::CFGR>(cfgr);
     }
 
@@ -204,7 +207,7 @@ public:
     template<SystemClockSource SRC>
     void select_sysclk_source() {
         uint32_t cfgr = read_hw_register<RCC_Register::CFGR>();
-        kiv::utils::update_bit_field<uint32_t, CFGR_SW_Pos, 2>(cfgr, static_cast<uint32_t>(SRC));
+        update_bit_field<CFGR_SW_Pos, 2>(cfgr, static_cast<uint32_t>(SRC));
         write_hw_register<RCC_Register::CFGR>(cfgr);
         // Wait until the hardware confirms the switch via the read-only SWS field
         while (!is_sysclk_switched_to(SRC)) {}
@@ -220,7 +223,7 @@ public:
     template<AHB1_Peripheral PERIPH>
     void enable_ahb1_clock() {
         uint32_t enr = read_hw_register<RCC_Register::AHB1ENR>();
-        kiv::utils::update_bit_field<uint32_t, static_cast<uint8_t>(PERIPH), 1>(enr, 1u);
+        update_bit_field<static_cast<uint8_t>(PERIPH), 1>(enr, 1u);
         write_hw_register<RCC_Register::AHB1ENR>(enr);
         (void)read_hw_register<RCC_Register::AHB1ENR>(); // propagation delay
     }
@@ -228,14 +231,14 @@ public:
     template<AHB1_Peripheral PERIPH>
     void disable_ahb1_clock() {
         uint32_t enr = read_hw_register<RCC_Register::AHB1ENR>();
-        kiv::utils::update_bit_field<uint32_t, static_cast<uint8_t>(PERIPH), 1>(enr, 0u);
+        update_bit_field<static_cast<uint8_t>(PERIPH), 1>(enr, 0u);
         write_hw_register<RCC_Register::AHB1ENR>(enr);
     }
 
     template<APB1_Peripheral PERIPH>
     void enable_apb1_clock() {
         uint32_t enr = read_hw_register<RCC_Register::APB1ENR>();
-        kiv::utils::update_bit_field<uint32_t, static_cast<uint8_t>(PERIPH), 1>(enr, 1u);
+        update_bit_field<static_cast<uint8_t>(PERIPH), 1>(enr, 1u);
         write_hw_register<RCC_Register::APB1ENR>(enr);
         (void)read_hw_register<RCC_Register::APB1ENR>();
     }
@@ -243,14 +246,14 @@ public:
     template<APB1_Peripheral PERIPH>
     void disable_apb1_clock() {
         uint32_t enr = read_hw_register<RCC_Register::APB1ENR>();
-        kiv::utils::update_bit_field<uint32_t, static_cast<uint8_t>(PERIPH), 1>(enr, 0u);
+        update_bit_field<static_cast<uint8_t>(PERIPH), 1>(enr, 0u);
         write_hw_register<RCC_Register::APB1ENR>(enr);
     }
 
     template<APB2_Peripheral PERIPH>
     void enable_apb2_clock() {
         uint32_t enr = read_hw_register<RCC_Register::APB2ENR>();
-        kiv::utils::update_bit_field<uint32_t, static_cast<uint8_t>(PERIPH), 1>(enr, 1u);
+        update_bit_field<static_cast<uint8_t>(PERIPH), 1>(enr, 1u);
         write_hw_register<RCC_Register::APB2ENR>(enr);
         (void)read_hw_register<RCC_Register::APB2ENR>();
     }
@@ -258,7 +261,7 @@ public:
     template<APB2_Peripheral PERIPH>
     void disable_apb2_clock() {
         uint32_t enr = read_hw_register<RCC_Register::APB2ENR>();
-        kiv::utils::update_bit_field<uint32_t, static_cast<uint8_t>(PERIPH), 1>(enr, 0u);
+        update_bit_field<static_cast<uint8_t>(PERIPH), 1>(enr, 0u);
         write_hw_register<RCC_Register::APB2ENR>(enr);
     }
 
@@ -322,8 +325,6 @@ public:
     void print_emulation_state() {
         if constexpr (!EMULATION) { return; }
 
-        using kiv::utils::get_bit_field;
-
         const uint32_t cr      = emulation_reg_data.at(static_cast<uint8_t>(RCC_Register::CR));
         const uint32_t pllcfgr = emulation_reg_data.at(static_cast<uint8_t>(RCC_Register::PLLCFGR));
         const uint32_t cfgr    = emulation_reg_data.at(static_cast<uint8_t>(RCC_Register::CFGR));
@@ -331,20 +332,20 @@ public:
         const uint32_t apb1enr = emulation_reg_data.at(static_cast<uint8_t>(RCC_Register::APB1ENR));
         const uint32_t apb2enr = emulation_reg_data.at(static_cast<uint8_t>(RCC_Register::APB2ENR));
 
-        const bool hsi_on = get_bit_field<uint32_t, CR_HSION_Pos,  1>(cr) != 0u;
-        const bool hse_on = get_bit_field<uint32_t, CR_HSEON_Pos,  1>(cr) != 0u;
-        const bool pll_on = get_bit_field<uint32_t, CR_PLLON_Pos,  1>(cr) != 0u;
+        const bool hsi_on = get_bit_field<CR_HSION_Pos,  1>(cr) != 0u;
+        const bool hse_on = get_bit_field<CR_HSEON_Pos,  1>(cr) != 0u;
+        const bool pll_on = get_bit_field<CR_PLLON_Pos,  1>(cr) != 0u;
 
-        const uint32_t pllm   = get_bit_field<uint32_t, PLLCFGR_PLLM_Pos,   6>(pllcfgr);
-        const uint32_t plln   = get_bit_field<uint32_t, PLLCFGR_PLLN_Pos,   9>(pllcfgr);
-        const uint32_t pllp_r = get_bit_field<uint32_t, PLLCFGR_PLLP_Pos,   2>(pllcfgr);
-        const uint32_t pllq   = get_bit_field<uint32_t, PLLCFGR_PLLQ_Pos,   4>(pllcfgr);
+        const uint32_t pllm   = get_bit_field<PLLCFGR_PLLM_Pos,   6>(pllcfgr);
+        const uint32_t plln   = get_bit_field<PLLCFGR_PLLN_Pos,   9>(pllcfgr);
+        const uint32_t pllp_r = get_bit_field<PLLCFGR_PLLP_Pos,   2>(pllcfgr);
+        const uint32_t pllq   = get_bit_field<PLLCFGR_PLLQ_Pos,   4>(pllcfgr);
         const auto pllsrc     = static_cast<PLL_Source>(
-                                    get_bit_field<uint32_t, PLLCFGR_PLLSRC_Pos, 1>(pllcfgr));
+                                    get_bit_field<PLLCFGR_PLLSRC_Pos, 1>(pllcfgr));
         const uint32_t pllp   = (pllp_r + 1u) * 2u; // convert reg encoding back to divider
 
         const auto sw = static_cast<SystemClockSource>(
-                            get_bit_field<uint32_t, CFGR_SW_Pos, 2>(cfgr));
+                            get_bit_field<CFGR_SW_Pos, 2>(cfgr));
 
         std::printf("---- RCC Emulation State ----\n");
         std::printf("  CR      : HSI=%s  HSE=%s  PLL=%s\n",
